@@ -15,6 +15,11 @@ import java.util.Random;
  */
 public class VotingSystemApp {
     public static void main(String[] args) {
+        // Логгирование завершения работы приложения
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            Logger.log("Приложение завершено.");
+        }));
+        
         SwingUtilities.invokeLater(() -> {
             LoginFrame loginFrame = new LoginFrame();
             loginFrame.setVisible(true);
@@ -38,6 +43,8 @@ class LoginFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new GridLayout(3, 2, 10, 10));
         
+        Logger.log("Авторизация запущена.");
+        
         // Создаем пользователей
         users = new HashMap<>();
         users.put("admin", "admin123"); // Администратор
@@ -55,6 +62,14 @@ class LoginFrame extends JFrame {
         JButton loginButton = new JButton("Войти");
         loginButton.addActionListener(new LoginButtonListener());
         add(loginButton);
+        
+        // Добавление логирования при завершении работы
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                Logger.log("Окно авторизации закрыто.");
+            }
+        });
     }
 
     private class LoginButtonListener implements ActionListener {
@@ -63,7 +78,16 @@ class LoginFrame extends JFrame {
             String username = usernameField.getText().trim();
             String password = new String(passwordField.getPassword());
 
+            if (username.isEmpty() || password.isEmpty()) {
+                Logger.log("Попытка входа с пустыми полями.");
+                JOptionPane.showMessageDialog(LoginFrame.this,
+                        "Пожалуйста, заполните все поля!",
+                        "Ошибка входа", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             if (users.containsKey(username) && users.get(username).equals(password)) {
+                Logger.log("Успешный вход: " + username);
                 JOptionPane.showMessageDialog(LoginFrame.this, 
                         "Добро пожаловать, " + username + "!", 
                         "Успешный вход", JOptionPane.INFORMATION_MESSAGE);
@@ -76,6 +100,7 @@ class LoginFrame extends JFrame {
                 }
                 dispose(); // Закрываем окно авторизации
             } else {
+                Logger.log("Ошибка входа для пользователя: " + username);
                 JOptionPane.showMessageDialog(LoginFrame.this, 
                         "Неверное имя пользователя или пароль!", 
                         "Ошибка входа", JOptionPane.ERROR_MESSAGE);
@@ -95,6 +120,17 @@ class AdminFrame extends JFrame {
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        
+        // Добавление логирования при завершении работы
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                Logger.log("Окно администратора закрыто.");
+            }
+        });
+        
+        Logger.log("Успешный вход администратора.");
+        Logger.log("Открыто окно администратора.");
 
         // Добавляем фон
         getContentPane().setBackground(new Color(30, 30, 30)); // Тёмно-серый фон
@@ -122,6 +158,7 @@ class AdminFrame extends JFrame {
         logArea.append("3. Сергей Петров\n");
 
         add(new JScrollPane(logArea), BorderLayout.CENTER);
+        Logger.log("Список голосовавших выведен успешно.");
     }
 }
 
@@ -140,6 +177,16 @@ class UserFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         
+        // Добавление логирования при завершении работы
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                Logger.log("Окно пользователя закрыто.");
+            }
+        });
+        
+        Logger.log("Приложение запущено.");
+        
         // Добавляем фон
         getContentPane().setBackground(new Color(30, 30, 30)); // Тёмно-серый фон
         
@@ -151,11 +198,13 @@ class UserFrame extends JFrame {
             Image scaledLogo = originalLogo.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
             JLabel logoLabel = new JLabel(new ImageIcon(scaledLogo));
             logoPanel.add(logoLabel);
+            Logger.log("Логотип успешно загружен.");
         } catch (NullPointerException e) {
             System.out.println("Логотип не найден. Убедитесь, что путь к логотипу указан правильно.");
             JLabel placeholderLogo = new JLabel("Логотип");
             placeholderLogo.setForeground(Color.WHITE);
             logoPanel.add(placeholderLogo);
+            Logger.log("Ошибка загрузки логотипа: файл не найден.");
         }
         add(logoPanel, BorderLayout.NORTH);
 
@@ -184,6 +233,8 @@ class UserFrame extends JFrame {
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
         statusLabel.setForeground(Color.WHITE);
         add(statusLabel, BorderLayout.SOUTH);
+        
+        Logger.log("Форма для голосования запущена");
 
         // Анимация снежинок
         Timer timer = new Timer(30, e -> {
@@ -193,6 +244,7 @@ class UserFrame extends JFrame {
             repaint();
         });
         timer.start();
+        Logger.log("Анимация снежинок запущена");
 
         // Создание снежинок
         for (int i = 0; i < 50; i++) {
@@ -240,13 +292,23 @@ class UserFrame extends JFrame {
         public void actionPerformed(ActionEvent e) {
             String name = nameField.getText().trim();
             if (name.isEmpty()) {
+                Logger.log("Попытка голосования без ввода имени.");
                 JOptionPane.showMessageDialog(UserFrame.this, 
                         "Пожалуйста, введите ваше имя перед голосованием.", 
                         "Ошибка", JOptionPane.WARNING_MESSAGE);
             } else {
+                if (!name.matches("[a-zA-Zа-яА-ЯёЁ ]+")) {
+                    Logger.log("Ввод некорректных символов в поле имени: " + name);
+                    JOptionPane.showMessageDialog(UserFrame.this,
+                            "Имя может содержать только буквы и пробелы.",
+                            "Ошибка", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                Logger.log("Голос принят от пользователя: " + name);
                 JOptionPane.showMessageDialog(UserFrame.this, 
                         "Спасибо за ваш голос, " + name + "!", 
                         "Голос принят", JOptionPane.INFORMATION_MESSAGE);
+                        Logger.log("Показано сообщение о благодарности за голос");
                 statusLabel.setText("Спасибо за ваш голос, " + name + "!");
                 
                 // Третье уведомление (например, поздравление)
@@ -256,6 +318,7 @@ class UserFrame extends JFrame {
                             "Поздравление", JOptionPane.INFORMATION_MESSAGE);
                 }
                 statusLabel.setText("Спасибо за ваш голос, " + name + "!");
+                Logger.log("Голосование завершено успешно");
             }
         }
     }
